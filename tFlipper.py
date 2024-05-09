@@ -211,11 +211,10 @@ def main():
 
   # Get the Flipper Zero's name
   flipper_name = "[ " + p.device_info["hardware_name"] + " ]"
-  flipper_name = "[ 4w3s0m0 ]"
   flipper_name_spacing = " " * int((128 - len(flipper_name)) / 2)
 
   # Bottom help line
-  bottom_line = "[Ctrl-K to show/hide keymap]     [ Ctrl-C to stop]"
+  bottom_line = "[ Ctrl-K to show/hide keymap ]     [ Ctrl-C to stop ]"
   bottom_line_spacing = " " * int((128 - len(bottom_line)) / 2)
 
   nb_display_lines = 34
