@@ -14,6 +14,8 @@ Text-mode [Flipper Zero](https://flipperzero.one/) remote-control.
 
 just like the remote control in [qFlipper](https://docs.flipper.net/qflipper), but in text mode.
 
+https://github.com/Giraut/tFlipper/assets/37288252/54177a7c-6bd6-4ac2-98ad-ee901d6b11ea
+
 
 
 ## Usage
@@ -34,7 +36,7 @@ Hit `Ctrl-K` to see the keyboard-to-buttons mapping. To remain compatible with m
 
 ## Installation
 
-- Install Python 3
+- Install [Python 3](https://www.python.org/)
 - Install the following modules:
 
     ```
