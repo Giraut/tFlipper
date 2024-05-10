@@ -24,7 +24,7 @@ https://github.com/Giraut/tFlipper/assets/37288252/fdbd40c5-2450-4179-8eb8-e7baa
 - Open a terminal
 - Invoke `python tFlipper.py`
 
-The utility connects to the Flipper Zero and start displaying its screen in the console.
+The utility connects to the Flipper Zero and starts displaying its screen in the console.
 
 ![Flipper Zero display in the console](screenshots/flipper_display_in_the_console.png)
 
