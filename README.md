@@ -51,7 +51,7 @@ Hit `Ctrl-K` to see the keyboard-to-buttons mapping. To remain compatible with m
     ```
 
 - Clone this repository
-- Copy the `tFlipper.py` anywhere you find convenient in the executable path
+- Copy the `tFlipper.py` file anywhere you find convenient in the executable path
 
 
 
