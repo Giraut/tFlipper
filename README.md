@@ -32,6 +32,9 @@ Hit `Ctrl-K` to see the keyboard-to-buttons mapping. To remain compatible with m
 
 ![Flipper Zero display in the console](screenshots/keyboard_mapping_help.png)
 
+If you invoke `python tFlipper.py -H`, the display will be rendered using high-density semigraphics: the entire display will then fit in a 80 x 24 console, at the cost of a slightly distorted image, because the aspect ratio cannot be respected:
+
+![Flipper Zero display in the console](screenshots/high_density_semigraphics_rendering.png)
 
 
 ## Installation
