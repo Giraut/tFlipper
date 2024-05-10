@@ -14,7 +14,7 @@ Text-mode [Flipper Zero](https://flipperzero.one/) remote-control.
 
 just like the remote control in [qFlipper](https://docs.flipper.net/qflipper), but in text mode.
 
-https://github.com/Giraut/tFlipper/assets/37288252/5ab6f7b4-39f9-489e-928a-16496b9c8691
+https://github.com/Giraut/tFlipper/assets/37288252/fdbd40c5-2450-4179-8eb8-e7baae83322f
 
 
 
