@@ -8,6 +8,7 @@ Version: 1.1.0
 
 import sys
 import argparse
+from time import time
 import queue
 import threading
 import multiprocessing
@@ -371,6 +372,15 @@ ESC = "\x1b"
 CR = "\r"
 LF = "\n"
 
+# VT100 cursor invisible
+set_cursor_invisible = ESC + "[?25l"
+
+# VT100 cursor visible
+set_cursor_visible = ESC + "[?25h"
+
+# VT100 invisible text
+set_text_invisible = ESC + "[8m"
+
 # ANSI 8-bit color selection
 set_bg_color = ESC + "[48;5;{}m"
 set_fg_color = ESC + "[38;5;{}m"
@@ -379,10 +389,10 @@ set_fg_color = ESC + "[38;5;{}m"
 ansi_8bit_black = 0
 ansi_8bit_orange = 208
 
-# ANSI attributes reset
-attribute_reset = ESC + "[0m"
+# VT100 attributes reset
+attributes_reset = ESC + "[0m"
 
-# ANSI x lines up
+# VT100 x lines up
 x_lines_up = ESC + "[{}A"
 
 
@@ -449,6 +459,12 @@ def main():
 	  action = "store_true"
 	)
 
+  argparser.add_argument(
+	  "-r", "--record",
+	  help = 'Text file to record the session into (same as "|tee <file>")',
+	  type = str
+	)
+
   args = argparser.parse_args()
 
   # Semigraphic-ize the keymap help strings
@@ -464,8 +480,6 @@ def main():
   width = 64 if args.high_density_semigraphics else 128
   height = 22 if args.high_density_semigraphics else 32
 
-  nb_display_lines = height + 2
-
   keymap_help_line_len = len(keymap_help[0])
   keymap_help_overlay_at_col = int((width - keymap_help_line_len) / 2)
   keymap_help_overlay_at_line = int((height - len(keymap_help)) / 2)
@@ -475,33 +489,87 @@ def main():
 
   # Get the Flipper Zero's name
   flipper_name = "[ " + p.device_info["hardware_name"] + " ]"
-  flipper_name_spc1 = " " * int((width - len(flipper_name)) / 2)
+
+  # Left and right spacers for the Flipper Zero's name, including an invisible
+  # timecode in the left spacer
+  flipper_name_spc1 = set_text_invisible + \
+			"{{:<{}}}".\
+			format(int((width - len(flipper_name)) / 2)).\
+			format("Runtime: {:0.3f}s") + attributes_reset
   flipper_name_spc2 = " " * (width - len(flipper_name_spc1) - len(flipper_name))
 
   # Bottom help line
   bottom_line = "[ Ctrl-K to show/hide keymap ]     [ Ctrl-C to stop ]"
+
+  # Left and right spacers for the bottom help line
   bottom_line_spc1 = " " * int((width - len(bottom_line)) / 2)
   bottom_line_spc2 = " " * (width - len(bottom_line_spc1) - len(bottom_line))
-
-  # ANSI sequences to home the cursor and send it to the end of the display
-  home_cursor = x_lines_up.format(nb_display_lines)
-  goto_end_display = CR + LF * (nb_display_lines - 1)
 
   # Spawn the thread to get keypresses
   q = multiprocessing.Queue()
   t = threading.Thread(target = input_thread, args = (q,))
   t.start()
 
+  # Open the save file if the session is recorded
+  r = open(args.record, "w", encoding = "utf-8") if args.record else None
+
+  nb_lines_back_up = 0
+  nb_lines_back_up_record = 0
+
+  cursor_visible = True
   show_keymap = False
+  start_time = None
+  screen_data = b""
 
   try:
 
     # Run until stopped by Ctrl-C
     while True:
 
+      # Process messages from the input thread
+      while True:
+
+        # Try to get one message out of the queue
+        try:
+          flipper_input, e = q.get_nowait()
+
+        except queue.Empty:
+          break
+
+        # If we got an exception from the input thread, re-raise it
+        if e is not None:
+          raise e
+
+        # Do we have a Flipper Zero input event string?
+        elif flipper_input is not None:
+
+          # Should we show or hide the keymap?
+          if flipper_input == "k":
+
+            show_keymap = not show_keymap
+            screen_data = b""	# Force a redraw
+
+          # If the string isn't empty, send the event to the Flipper Zero
+          elif flipper_input:
+            p.rpc_gui_send_input(flipper_input)
+
+        # The input thread exited normally so do the same thing
+        else:
+          raise KeyboardInterrupt
+
       # Get a screenshot from the Flipper Zero
+      prev_screen_data = screen_data
       screen_data = p.rpc_gui_snapshot_screen()
       assert len(screen_data) == 1024
+
+      # If the Flipper Zero's display hasn't changed, don't render it again
+      if screen_data == prev_screen_data:
+        continue
+
+      # Hide the cursor if needed
+      if cursor_visible:
+        sys.stdout.write(set_cursor_invisible)
+        cursor_visible = False
 
       # Turn the screen data into lines of unicode block elements
       if args.high_density_semigraphics:
@@ -524,74 +592,85 @@ def main():
 				for i in range(k, k + 128)])
 			for k in range(0, 1024, 128) for j in (0, 2, 4, 6)]
 
+      # Get the current time and calculate the frame's timecode
+      now = time()
+      if start_time is None:
+        start_time = now
+      timecode = now - start_time
+
+      # Do we record the session?
+      if r is not None:
+
+        # Generate the ASCII art for the record without help overlay or bottom
+        # help line
+        aa = flipper_name_spc1.format(timecode) + flipper_name + \
+		flipper_name_spc2 + CR + LF + \
+		"".join([set_bg_color.format(ansi_8bit_black) + \
+				set_fg_color.format(ansi_8bit_orange) + \
+				l + attributes_reset + CR + LF \
+				for l in imglines]) + \
+		x_lines_up.format(height + 1)
+
+        # Record the ASCII art also if needed
+        r.write(aa)
+        nb_lines_back_up_record = height + 1
+
       # If the keymap help should be displayed, overlay it over the lines
       if show_keymap:
         for i, l in enumerate(keymap_help):
           imglines[keymap_help_overlay_at_line + i] = \
 			imglines[keymap_help_overlay_at_line + i]\
 				[:keymap_help_overlay_at_col] + \
-			attribute_reset + \
+			attributes_reset + \
 			l + \
 			set_fg_color.format(ansi_8bit_orange) + \
 			imglines[keymap_help_overlay_at_line + i]\
 				[keymap_help_overlay_at_col + \
 					keymap_help_line_len:]
 
-      # Print the final ASCII art
-      print(flipper_name_spc1 + flipper_name + flipper_name_spc2 + CR + LF + \
+      # Generate the displayed ASCII art with help overlay and bottom help line
+      aa = flipper_name_spc1.format(timecode) + flipper_name + \
+		flipper_name_spc2 + CR + LF + \
 		"".join([set_bg_color.format(ansi_8bit_black) + \
 				set_fg_color.format(ansi_8bit_orange) + \
-				l + attribute_reset + CR + LF \
+				l + attributes_reset + CR + LF \
 				for l in imglines]) + \
-		bottom_line_spc1 + bottom_line + bottom_line_spc2 + CR + \
-		home_cursor)
+		bottom_line_spc1 + bottom_line + bottom_line_spc2 + \
+		x_lines_up.format(1) + CR + LF + x_lines_up.format(height + 1)
 
-      # Flush stdout to make sure the console is updated immediately
+      # Print the ASCII art and flush the console so it's updated immediately
+      sys.stdout.write(aa)
       sys.stdout.flush()
-
-      # Process messages from the input thread
-      while True:
-
-        # Try to get one message out of the queue
-        try:
-          flipper_input, e = q.get_nowait()
-
-        except queue.Empty:
-          break
-
-        # If we got an exception from the input thread, re-raise it
-        if e is not None:
-          raise e
-
-        # Do we have a Flipper Zero input event string?
-        elif flipper_input is not None:
-
-          # Should we show or hide the keymap?
-          if flipper_input == "k":
-            show_keymap = not show_keymap
-
-          # If the string isn't empty, send the event to the Flipper Zero
-          elif flipper_input:
-            p.rpc_gui_send_input(flipper_input)
-
-        # The input thread exited normally so do the same thing
-        else:
-          raise KeyboardInterrupt
+      nb_lines_back_up = height + 1
 
   except KeyboardInterrupt:
-
-    # Skip past the display
-    print(goto_end_display)
+    pass
 
   except:
-
-    # Skip past the display
-    print(goto_end_display)
-
-    # Re-raise the exception
     raise
 
   finally:
+
+    # Get the current time and calculate this last output's timecode
+    now = time()
+    if start_time is None:
+      start_time = now
+    timecode = now - start_time
+
+    # Output the last hidden timecode then skip past the rendering
+    sys.stdout.write(CR + set_text_invisible + \
+			"Runtime: {:0.3f}s".format(timecode) + \
+			attributes_reset + CR + LF * (nb_lines_back_up + 1))
+
+    # If we record the session output the same thing in the record file
+    if r is not None:
+      r.write(CR + set_text_invisible + \
+		"Runtime: {:0.3f}s".format(timecode) + \
+		attributes_reset + CR + LF * (nb_lines_back_up_record + 1))
+
+    # Show the cursor again if needed
+    if not cursor_visible:
+      sys.stdout.write(set_cursor_visible)
 
     # Tell the input thread to stop if it hasn't stopped by itself already
     setattr(t, "do_run", False)
