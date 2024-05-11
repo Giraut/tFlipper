@@ -51,6 +51,7 @@ If you run `python tFlipper.py -g session.gif`, the session will be recorded as 
     ```
     $ python -m pip install flipperzero-protobuf
     $ python -m pip install readchar
+    $ python -m pip install Pillow
     ```
 
 - In Windows, you also need to install:
