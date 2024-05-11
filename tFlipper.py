@@ -756,7 +756,7 @@ def main():
           images.append(image)
           durations_ms.append(duration_ms)
 
-    # Save the images an an animated GIF
+    # Save the images as an animated GIF
     images[0].save(args.gif, save_all = True, append_images = images[1:],
 			optimize = True, duration = durations_ms, loop = 0)
 
