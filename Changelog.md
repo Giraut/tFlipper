@@ -1,3 +1,7 @@
+## Version 1.3.0 - 12/05/2024
+
+- Added the ability to record a Flipper session as an animated GIF
+
 ## Version 1.2.0 - 11/05/2024
 
 - Added the ability to record a Flipper session in a text file
