@@ -22,9 +22,8 @@ except:
 
 try:
   from PIL import Image
-  has_pil = True
 except:
-  has_pil = False
+  pass
 
 
 
@@ -490,8 +489,7 @@ def main():
 	  type = str
 	)
 
-  if has_pil:
-    argparser.add_argument(
+  argparser.add_argument(
 	  "-g", "--gif",
 	  help = "Animated GIF to record the session into",
 	  action = argparse_gif_filename_parser
@@ -546,7 +544,7 @@ def main():
   rt = open(args.txt, "w", encoding = "utf-8") if args.txt else None
 
   # Create a list to store screenshots into if the session is recorded in a GIF
-  screenshots = [] if has_pil and args.gif else None
+  screenshots = [] if args.gif else None
 
   nb_lines_back_up = 0
   nb_lines_back_up_text_record = 0
