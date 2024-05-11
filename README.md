@@ -43,7 +43,7 @@ If you invoke `python tFlipper.py -H`, the display will be rendered using high-d
 - Install the following modules:
 
     ```
-    $ python -m pip install flipperzero_protobuf
+    $ python -m pip install flipperzero-protobuf
     $ python -m pip install readchar
     ```
 
