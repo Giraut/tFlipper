@@ -461,7 +461,7 @@ def main():
 
   argparser.add_argument(
 	  "-r", "--record",
-	  help = 'Text file to record the session into (same as "|tee <file>")',
+	  help = "Text file to record the session into",
 	  type = str
 	)
 
