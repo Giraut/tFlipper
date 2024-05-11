@@ -13,7 +13,7 @@ Text-mode [Flipper Zero](https://flipperzero.one/) remote-control.
 - Send button presses from the keyboard
 - Record and replay a session
 
-https://github.com/Giraut/tFlipper/assets/37288252/fdbd40c5-2450-4179-8eb8-e7baae83322f
+https://github.com/Giraut/tFlipper/assets/37288252/9e1c3753-835e-4ead-a4c8-cdbc5b4fc527
 
 
 
@@ -37,7 +37,7 @@ If you run `python tFlipper.py -H`, the display will be rendered using high-dens
 
 If you run `python tFlipper.py -t session.txt`, the session will be recorded as ANSI art text in `session.txt`. The text file can be replayed with the correct timing with `python tFreplay.py session.txt`.
 
-If you run `python tFlipper.py -g session.gif`, the session will be recorded as an animated GIF such as this one:
+If you run `python tFlipper.py -g session.gif`, the session will be recorded as an animated GIF:
 
 ![Flipper Zero session recorded as an animated GIF](screenshots/session_animation.gif)
 
