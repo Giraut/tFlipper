@@ -1,3 +1,5 @@
+## Version 1.2.0 - 11/05/2024
+
 - Added the ability to record a Flipper session in a text file
 - Added a session record replay utility
 - Hide the cursor while displaying the Flipper's display

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Flipper Zero remote control for the terminal
-Version: 1.1.0
+Version: 1.2.0
 
 Record player
 
