@@ -21,7 +21,7 @@ https://github.com/Giraut/tFlipper/assets/37288252/fdbd40c5-2450-4179-8eb8-e7baa
 
 - Connect the Flipper Zero to a USB port
 - Open a terminal
-- Invoke `python tFlipper.py`
+- Run `python tFlipper.py`
 
 The utility connects to the Flipper Zero and starts displaying its screen in the console.
 
@@ -31,11 +31,16 @@ Hit `Ctrl-K` to see the keyboard-to-buttons mapping. To remain compatible with m
 
 ![Flipper Zero display in the console](screenshots/keyboard_mapping_help.png)
 
-If you invoke `python tFlipper.py -H`, the display will be rendered using high-density semigraphics: the entire display will then fit in a 80 x 24 console, at the cost of a slightly distorted image, because the aspect ratio cannot be respected:
+If you run `python tFlipper.py -H`, the display will be rendered using high-density semigraphics: the entire display will then fit in a 80 x 24 console, at the cost of a slightly distorted image, because the aspect ratio cannot be respected:
 
 ![Flipper Zero display in the console](screenshots/high_density_semigraphics_rendering.png)
 
-If you invoke `python tFlipper.py -r session.txt`, the session will be recorded in `session.txt`. The session file can be replayed with `python tFreplay.py session.txt`.
+If you run `python tFlipper.py -t session.txt`, the session will be recorded as ANSI art text in `session.txt`. The text file can be replayed with the correct timing with `python tFreplay.py session.txt`.
+
+If you run `python tFlipper.py -g session.gif`, the session will be recorded as an animated GIF such as this one:
+
+![Flipper Zero session recorded as an animated GIF](screenshots/session_animation.gif)
+
 
 
 ## Installation
