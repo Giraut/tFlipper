@@ -409,6 +409,21 @@ rgb_orange = [0xfe, 0x8a, 0x2c]
 ## Routines
 #
 
+class argparse_gif_filename_parser(argparse.Action):
+  """Argparse parser for a valid GIF filename
+  """
+
+  def __call__(self , parser, namespace, value, option_string = None):
+    """__call__ method
+    """
+
+    if not value.upper().endswith(".GIF"):
+      parser.error("{}: invalid GIF filename".format(value))
+
+    setattr(namespace, self.dest, value)
+
+
+
 def input_thread(msg_queue):
   """ Get keyboard keypresses, turn them into Flipper Zero input events and send
   them to the main thread
@@ -479,7 +494,7 @@ def main():
     argparser.add_argument(
 	  "-g", "--gif",
 	  help = "Animated GIF to record the session into",
-	  type = str
+	  action = argparse_gif_filename_parser
 	)
 
   args = argparser.parse_args()
