@@ -11,8 +11,7 @@ Text-mode [Flipper Zero](https://flipperzero.one/) remote-control.
 
 - Display the Flipper Zero's screen in the console in real time
 - Send button presses from the keyboard
-
-just like the remote control in [qFlipper](https://docs.flipper.net/qflipper), but in text mode.
+- Record and replay a session
 
 https://github.com/Giraut/tFlipper/assets/37288252/fdbd40c5-2450-4179-8eb8-e7baae83322f
 
@@ -36,6 +35,8 @@ If you invoke `python tFlipper.py -H`, the display will be rendered using high-d
 
 ![Flipper Zero display in the console](screenshots/high_density_semigraphics_rendering.png)
 
+If you invoke `python tFlipper.py -r session.txt`, the session will be recorded in `session.txt`. The session file can be replayed with `python tFreplay.py session.txt`.
+
 
 ## Installation
 
@@ -54,7 +55,7 @@ If you invoke `python tFlipper.py -H`, the display will be rendered using high-d
     ```
 
 - Clone this repository
-- Copy the `tFlipper.py` file anywhere you find convenient in the executable path
+- Copy `tFlipper.py` and `tFreplay.py` anywhere you find convenient in the executable path
 
 
 
