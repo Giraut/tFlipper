@@ -20,6 +20,12 @@ try:
 except:
   pass
 
+try:
+  from PIL import Image
+  has_pil = True
+except:
+  has_pil = False
+
 
 
 ## Keyboard-to-Flipper input mapping
@@ -385,15 +391,18 @@ set_text_invisible = ESC + "[8m"
 set_bg_color = ESC + "[48;5;{}m"
 set_fg_color = ESC + "[38;5;{}m"
 
-# Predefined colors
-ansi_8bit_black = 0
-ansi_8bit_orange = 208
-
 # VT100 attributes reset
 attributes_reset = ESC + "[0m"
 
 # VT100 x lines up
 x_lines_up = ESC + "[{}A"
+
+# Predefined colors
+ansi_8bit_black = 0
+rgb_black = [0, 0, 0]
+
+ansi_8bit_orange = 208
+rgb_orange = [0xfe, 0x8a, 0x2c]
 
 
 
@@ -460,8 +469,16 @@ def main():
 	)
 
   argparser.add_argument(
-	  "-r", "--record",
-	  help = "Text file to record the session into",
+	  "-t", "--txt",
+	  help = "Text file to record the session into "
+			"(play it back with tFreplay)",
+	  type = str
+	)
+
+  if has_pil:
+    argparser.add_argument(
+	  "-g", "--gif",
+	  help = "Animated GIF to record the session into",
 	  type = str
 	)
 
@@ -510,11 +527,14 @@ def main():
   t = threading.Thread(target = input_thread, args = (q,))
   t.start()
 
-  # Open the save file if the session is recorded
-  r = open(args.record, "w", encoding = "utf-8") if args.record else None
+  # Open the text file if the session is recorded in a text file
+  rt = open(args.txt, "w", encoding = "utf-8") if args.txt else None
+
+  # Create a list to store screenshots into if the session is recorded in a GIF
+  screenshots = [] if has_pil and args.gif else None
 
   nb_lines_back_up = 0
-  nb_lines_back_up_record = 0
+  nb_lines_back_up_text_record = 0
 
   cursor_visible = True
   show_keymap = False
@@ -566,6 +586,16 @@ def main():
       if screen_data == prev_screen_data:
         continue
 
+      # Get the current time and calculate the screenshot's timecode
+      now = time()
+      if start_time is None:
+        start_time = now
+      timecode = now - start_time
+
+      # Store the screenshot and the timecode if needed
+      if screenshots is not None:
+        screenshots.append((screen_data, timecode))
+
       # Hide the cursor if needed
       if cursor_visible:
         sys.stdout.write(set_cursor_invisible)
@@ -592,14 +622,8 @@ def main():
 				for i in range(k, k + 128)])
 			for k in range(0, 1024, 128) for j in (0, 2, 4, 6)]
 
-      # Get the current time and calculate the frame's timecode
-      now = time()
-      if start_time is None:
-        start_time = now
-      timecode = now - start_time
-
-      # Do we record the session?
-      if r is not None:
+      # Do we record the session in a text file?
+      if rt is not None:
 
         # Generate the ASCII art for the record without help overlay or bottom
         # help line
@@ -611,9 +635,9 @@ def main():
 				for l in imglines]) + \
 		x_lines_up.format(height + 1)
 
-        # Record the ASCII art also if needed
-        r.write(aa)
-        nb_lines_back_up_record = height + 1
+        # Save the ASCII art into the file
+        rt.write(aa)
+        nb_lines_back_up_text_record = height + 1
 
       # If the keymap help should be displayed, overlay it over the lines
       if show_keymap:
@@ -657,16 +681,20 @@ def main():
       start_time = now
     timecode = now - start_time
 
+    # If screenshots are recorded, add this timecode with no screen data
+    if screenshots is not None:
+      screenshots.append((None, timecode))
+
     # Output the last hidden timecode then skip past the rendering
     sys.stdout.write(CR + set_text_invisible + \
 			"Runtime: {:0.3f}s".format(timecode) + \
 			attributes_reset + CR + LF * (nb_lines_back_up + 1))
 
-    # If we record the session output the same thing in the record file
-    if r is not None:
-      r.write(CR + set_text_invisible + \
+    # If we record the session into a text file, output the same thing into it
+    if rt is not None:
+      rt.write(CR + set_text_invisible + \
 		"Runtime: {:0.3f}s".format(timecode) + \
-		attributes_reset + CR + LF * (nb_lines_back_up_record + 1))
+		attributes_reset + CR + LF * (nb_lines_back_up_text_record + 1))
 
     # Show the cursor again if needed
     if not cursor_visible:
@@ -677,6 +705,47 @@ def main():
 
     # Join the thread
     t.join()
+
+  # If screenshots were recorded, save them as an animated GIF
+  if screenshots is not None:
+
+    # 2-color palette: color #0 = orange, color #1 = black
+    palette = rgb_orange + rgb_black
+
+    # Convert the screenshots to images and create a list of GIF frame durations
+    # Scale up the images x4
+    images = []
+    durations_ms = []
+
+    for n, (screen_data, timecode) in enumerate(screenshots):
+      if screen_data is not None:
+
+        # Convert the Flipper screen data into an image and scale it up
+        image_data = bytes([(screen_data[i] >> j) & 1 \
+				for k in range(0, 1024, 128) \
+				for j in range(8) \
+				for i in range(k, k + 128)])
+        image = Image.frombytes(mode = "P", size = (128, 64),
+				data = image_data).\
+				resize((512, 256), resample = Image.BOX)
+        image.putpalette(palette)
+        duration_ms = (screenshots[n + 1][1] - timecode) * 1000
+
+        # Append the image as many times as needed so that the duration doesn't
+        # exceed 655350 ms (i.e. 65535 hundredth of a second encoded on an
+        # unsigned short in the GIF format) per image
+        while duration_ms > 655350:
+          images.append(image)
+          durations_ms.append(655350)
+          duration_ms -= 655350
+
+        if duration_ms > 0:
+          images.append(image)
+          durations_ms.append(duration_ms)
+
+    # Save the images an an animated GIF
+    images[0].save(args.gif, save_all = True, append_images = images[1:],
+			optimize = True, duration = durations_ms, loop = 0)
 
   return 0
 
