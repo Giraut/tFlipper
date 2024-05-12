@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Flipper Zero remote control for the terminal
-Version: 1.3.0
+Version: 1.4.0
 """
 
 ## Modules

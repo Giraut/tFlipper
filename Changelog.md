@@ -1,3 +1,5 @@
+## Version 1.4.0 - 12/05/2024
+
 - Added the ability to record and replay button press events
 - Better animated GIF generator
 - Renamed both scripts lowercase for easier typing
