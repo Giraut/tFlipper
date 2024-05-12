@@ -11,7 +11,8 @@ Text-mode [Flipper Zero](https://flipperzero.one/) remote-control.
 
 - Display the Flipper Zero's screen in the console in real time
 - Send button presses from the keyboard
-- Record and replay a session
+- Record and replay a screen session
+- Record and replay button presses
 
 https://github.com/Giraut/tFlipper/assets/37288252/9e1c3753-835e-4ead-a4c8-cdbc5b4fc527
 
@@ -31,16 +32,19 @@ Hit `Ctrl-K` to see the keyboard-to-buttons mapping. To remain compatible with m
 
 ![Flipper Zero display in the console](screenshots/keyboard_mapping_help.png)
 
-If you run `python tflipper.py -H`, the display will be rendered using high-density semigraphics: the entire display will then fit in a 80 x 24 console, at the cost of a slightly distorted image, because the aspect ratio cannot be respected:
+- Run `python tflipper.py -H` to render the display using high-density semigraphics: the entire display will then fit in a 80 x 24 console, at the cost of a slightly distorted image, because the aspect ratio cannot be respected:
 
 ![Flipper Zero display in the console](screenshots/high_density_semigraphics_rendering.png)
 
-If you run `python tflipper.py -t session.txt`, the session will be recorded as ANSI art text in `session.txt`. The text file can be replayed with the correct timing with `python tfreplay.py session.txt`.
+- Run `python tflipper.py -t session.txt` to record the session as ANSI text in `session.txt`, including timing markers and button press events:
+  - The screen session can be replayed with the correct timing with `python tfreplay.py session.txt`
+  - The button presses can be replayed on the Flipper zero with `python tflipper.py -r session.txt`
 
-If you run `python tflipper.py -g session.gif`, the session will be recorded as an animated GIF:
+- Run `python tflipper.py -g session.gif` to record the session as an animated GIF:
 
 ![Flipper Zero session recorded as an animated GIF](screenshots/session_animation.gif)
 
+The animated GIF can be replayed using most image viewers, video players and web browsers, but it does not contain any replayable button press events.
 
 
 ## Installation
