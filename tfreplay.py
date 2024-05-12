@@ -69,7 +69,7 @@ def main():
   args = argparser.parse_args()
 
   # Precompiled regex for an invisible timecode and button presses marker
-  re_timecode = re.compile((set_text_invisible.replace("[", "\\[") + \
+  re_tc_btn_marker = re.compile((set_text_invisible.replace("[", "\\[") + \
 					"\[([0-9]+\.[0-9]{3})s\] " \
 					"\[[lLdDuUrRoObB]*\]" + \
 					attributes_reset.replace("[", "\\[")).\
@@ -98,7 +98,7 @@ def main():
       for l in f.readlines():
 
         # Does the line contain an invisible timecode?
-        m = re_timecode.search(l)
+        m = re_tc_btn_marker.search(l)
         if m:
 
           # Wait long enough to reproduce the same delay as originally recorded
