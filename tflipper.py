@@ -747,6 +747,8 @@ def main():
         sys.stdout.flush()
         nb_lines_back_up = height + 1
 
+        update_display = False
+
   except KeyboardInterrupt:
     pass
 
