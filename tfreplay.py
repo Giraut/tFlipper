@@ -68,9 +68,10 @@ def main():
 
   args = argparser.parse_args()
 
-  # Precompiled regex for an invisible timecode
+  # Precompiled regex for an invisible timecode and button presses marker
   re_timecode = re.compile((set_text_invisible.replace("[", "\\[") + \
-					"Runtime: ([0-9]+\.[0-9]{3})s *" + \
+					"\[([0-9]+\.[0-9]{3})s\] " \
+					"\[[lLdDuUrRoObB]*\]" + \
 					attributes_reset.replace("[", "\\[")).\
 					encode("ascii"))
 
