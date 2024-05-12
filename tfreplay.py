@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Flipper Zero remote control for the terminal
-Version: 1.4.0
+Version: 1.3.0
 
 Record player
 
@@ -97,7 +97,7 @@ def main():
       # Read the file line by line
       for l in f.readlines():
 
-        # Does the line contain an invisible timecode?
+        # Does the line contain an invisible timecode and button presses marker?
         m = re_tc_btn_marker.search(l)
         if m:
 
