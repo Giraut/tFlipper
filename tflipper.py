@@ -674,13 +674,13 @@ def main():
         if gif_frames:
 
           # The difference between this timecode and the previous GIF frame's
-          # timecodeone is the previous GIF frame's duration
+          # timecode is the previous GIF frame's duration
           prev_frame_duration_ms = (timecode - last_gif_frame_timecode) * 1000
 
           # Repeat the previous GIF frame as many times as needed (with an
           # invisible change to one pixel to force PIL to add the frame) so
           # that no individual frame exceeds the maximum duration but the image
-          # is displayed for the correct amount of time
+          # is displayed for the correct total amount of time
           while prev_frame_duration_ms > max_gif_frame_duration_ms + \
 						min_gif_frame_duration_ms:
             image = copy(gif_frames[-1])
@@ -689,7 +689,7 @@ def main():
             gif_frames.append(image)
             prev_frame_duration_ms -= max_gif_frame_duration_ms
 
-          # Set the duration of the last GIF frame
+          # Add the duration of the last GIF frame
           gif_frame_durations_ms.append(max(prev_frame_duration_ms,
 						min_gif_frame_duration_ms))
 
@@ -743,17 +743,17 @@ def main():
       # record this frame?
       if rt is not None and (screen_data_changed or flipper_inputs):
 
-        # Generate the ASCII art for the record without help overlay or bottom
+        # Generate the ANSI text for the record without help overlay or bottom
         # help line
-        aa = flipper_name_spc1 + flipper_name + flipper_name_spc2 + CR + LF + \
+        at = flipper_name_spc1 + flipper_name + flipper_name_spc2 + CR + LF + \
 		"".join([set_bg_color.format(ansi_8bit_black) + \
 				set_fg_color.format(ansi_8bit_orange) + \
 				l + attributes_reset + CR + LF \
 				for l in imglines]) + \
 		x_lines_up.format(height + 1)
 
-        # Save the ASCII art into the file
-        rt.write(aa)
+        # Save the ANSI text into the file
+        rt.write(at)
         nb_lines_back_up_text_record = height + 1
 
       # Should we update the display?
@@ -772,8 +772,8 @@ def main():
 				[keymap_help_overlay_at_col + \
 					keymap_help_line_len:]
 
-        # Generate the display ASCII art with help overlay and bottom help line
-        aa = flipper_name_spc1 + flipper_name + flipper_name_spc2 + CR + LF + \
+        # Generate the display ANSI text with help overlay and bottom help line
+        at = flipper_name_spc1 + flipper_name + flipper_name_spc2 + CR + LF + \
 		"".join([set_bg_color.format(ansi_8bit_black) + \
 				set_fg_color.format(ansi_8bit_orange) + \
 				l + attributes_reset + CR + LF \
@@ -781,8 +781,8 @@ def main():
 		bottom_line_spc1 + bottom_line + bottom_line_spc2 + \
 		x_lines_up.format(1) + CR + LF + x_lines_up.format(height + 1)
 
-        # Print the ASCII art and flush the console so it's updated immediately
-        sys.stdout.write(aa)
+        # Print the ANSI text and flush the console so it's updated immediately
+        sys.stdout.write(at)
         sys.stdout.flush()
         nb_lines_back_up = height + 1
 
@@ -807,13 +807,13 @@ def main():
     if gif_frames:
 
       # The difference between this timecode and the previous GIF frame's
-      # timecodeone is the previous GIF frame's duration
+      # timecode is the previous GIF frame's duration
       prev_frame_duration_ms = (timecode - last_gif_frame_timecode) * 1000
 
       # Repeat the previous GIF frame as many times as needed (with an
       # invisible change to one pixel to force PIL to add the frame) so
       # that no individual frame exceeds the maximum duration but the image
-      # is displayed for the correct amount of time
+      # is displayed for the correct total amount of time
       while prev_frame_duration_ms > max_gif_frame_duration_ms + \
 					min_gif_frame_duration_ms:
         image = copy(gif_frames[-1])
@@ -822,12 +822,12 @@ def main():
         gif_frames.append(image)
         prev_frame_duration_ms -= max_gif_frame_duration_ms
 
-      # Set the duration of the final GIF frame
+      # Add the duration of the final GIF frame
       gif_frame_durations_ms.append(max(prev_frame_duration_ms,
 						min_gif_frame_duration_ms))
 
-    # Output the last invisible timecode and button presses marker then
-    # skip past the rendering
+    # Output the last invisible timecode and button presses marker then skip
+    # past the rendering
     sys.stdout.write(CR + set_text_invisible + \
 			invisible_tc_btn_marker_fmt.
 				format(timecode,flipper_inputs) + \
@@ -850,16 +850,16 @@ def main():
     # Join the thread
     t.join()
 
-  # If GIF frames are recorded and we have at least one frame, save them as an
+  # If GIF frames were recorded and we have at least one frame, save them as an
   # animated GIF
   if gif_frames:
 
     # Add a copy of the first and last frames with one pixel invisibly modified
     # (to force PIL to add the frames) with a very small duration to the start
     # and the end of the animation respectively, because some video players
-    # don't play edge frames with the correct duration - i.e. mplayer
+    # don't play edge frames with the correct duration - e.g. mplayer
 
-    # Duplicate of the first frame
+    # Slightly modified duplicate of the first frame
     gif_frame_durations_ms[0] = max(gif_frame_durations_ms[0] - \
 					min_gif_frame_duration_ms,
 					min_gif_frame_duration_ms)
@@ -868,7 +868,7 @@ def main():
     gif_frames.insert(0, image)
     gif_frame_durations_ms.insert(0, min_gif_frame_duration_ms)
 
-    # Duplicate of the last frame
+    # Slightly modified duplicate of the last frame
     gif_frame_durations_ms[-1] = max(gif_frame_durations_ms[-1] - \
 					min_gif_frame_duration_ms,
 					min_gif_frame_duration_ms)
