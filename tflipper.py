@@ -662,7 +662,6 @@ def main():
       assert len(screen_data) == 1024
       screen_data_changed = screen_data != prev_screen_data
 
-
       # If the Flipper's display hasn't changed and no input was sent to the
       # Flipper, there is nothing more to do with this frame
       if not screen_data_changed and not update_display and not flipper_inputs:
