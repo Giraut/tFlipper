@@ -642,7 +642,7 @@ def main():
       if timecode < 0:
         timecode = 0
 
-      # If we're due to replay Flipper Zero button presses, add then to the
+      # If we're due to replay Flipper Zero button presses, add them to the
       # inputs and replay them
       while replay_buttons_at and timecode >= replay_buttons_at[0][0]:
 
