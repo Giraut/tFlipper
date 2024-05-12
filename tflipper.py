@@ -9,6 +9,7 @@ Version: 1.3.0
 import sys
 import argparse
 from time import time
+from copy import copy
 import queue
 import threading
 import multiprocessing
@@ -398,10 +399,20 @@ x_lines_up = ESC + "[{}A"
 
 # Predefined colors
 ansi_8bit_black = 0
-rgb_black = [0, 0, 0]
+rgb_black1 = [0, 0, 0]
+rgb_black2 = [0, 0, 1]
 
 ansi_8bit_orange = 208
-rgb_orange = [0xfe, 0x8a, 0x2c]
+rgb_orange1 = [0xfe, 0x8a, 0x2c]
+rgb_orange2 = [0xfe, 0x8a, 0x2d]
+
+# 4-color palette for the GIF file: color 0 & 1 = orange, color 2 & 3 = black
+gif_palette = rgb_orange1 + rgb_black1 + rgb_orange2 + rgb_black2
+
+# Minimum and maximum duration of one GIF frame
+min_gif_frame_duration_ms = 10 #ms	# because the GIF format encodes the
+max_gif_frame_duration_ms = 655350 #ms	# frame duration in 1/100th of a second
+					# in an unsigned short
 
 
 
@@ -520,13 +531,12 @@ def main():
   # Get the Flipper Zero's name
   flipper_name = "[ " + p.device_info["hardware_name"] + " ]"
 
-  # Left and right spacers for the Flipper Zero's name, including an invisible
-  # timecode in the left spacer
-  flipper_name_spc1 = set_text_invisible + \
-			"{{:<{}}}".\
-			format(int((width - len(flipper_name)) / 2)).\
-			format("Runtime: {:0.3f}s") + attributes_reset
-  flipper_name_spc2 = " " * (width - len(flipper_name_spc1) - len(flipper_name))
+  # Format of the invisible timecode and button presses marker
+  invisible_tc_btn_marker_fmt = "[{:0.3f}s] [{}]"
+
+  # Left and right spacers for the Flipper Zero's name
+  len_flipper_name_spc1 = int((width - len(flipper_name)) / 2)
+  flipper_name_spc2 = " " * (width - len_flipper_name_spc1 - len(flipper_name))
 
   # Bottom help line
   bottom_line = "[ Ctrl-K to show/hide keymap ]     [ Ctrl-C to stop ]"
@@ -543,22 +553,27 @@ def main():
   # Open the text file if the session is recorded in a text file
   rt = open(args.txt, "w", encoding = "utf-8") if args.txt else None
 
-  # Create a list to store screenshots into if the session is recorded in a GIF
-  screenshots = [] if args.gif else None
+  # Create a list of frames and durations if the session is recorded in a GIF
+  gif_frames = [] if args.gif else None
+  gif_frame_durations_ms = [] if args.gif else None
 
   nb_lines_back_up = 0
   nb_lines_back_up_text_record = 0
 
   cursor_visible = True
   show_keymap = False
+
   start_time = None
 
   screen_data = b""
+  update_display = True
 
   try:
 
     # Run until stopped by Ctrl-C
     while True:
+
+      flipper_inputs = ""
 
       # Process messages from the input thread
       while True:
@@ -581,11 +596,14 @@ def main():
           if flipper_input == "k":
 
             show_keymap = not show_keymap
-            screen_data = b""	# Force a redraw
+            update_display = True
 
-          # If the string isn't empty, send the event to the Flipper Zero
+          # If the string isn't empty, send the event to the Flipper Zero and
+          # store them for recording in the session text file in short form
           elif flipper_input:
             p.rpc_gui_send_input(flipper_input)
+            i1, i2 = flipper_input.split()
+            flipper_inputs += i2[0].lower() if i1 == "SHORT" else i2[0].upper()
 
         # The input thread exited normally so do the same thing
         else:
@@ -595,9 +613,11 @@ def main():
       prev_screen_data = screen_data
       screen_data = p.rpc_gui_snapshot_screen()
       assert len(screen_data) == 1024
+      screen_data_changed = screen_data != prev_screen_data
 
-      # If the Flipper Zero's display hasn't changed, don't render it again
-      if screen_data == prev_screen_data:
+      # If the Flipper's display hasn't changed and no input was sent to the
+      # Flipper, there is nothing more to do with this frame
+      if not screen_data_changed and not update_display and not flipper_inputs:
         continue
 
       # Get the current time and calculate the screenshot's timecode
@@ -605,10 +625,48 @@ def main():
       if start_time is None:
         start_time = now
       timecode = now - start_time
+      if timecode < 0:
+        timecode = 0
 
-      # Store the screenshot and the timecode if needed
-      if screenshots is not None:
-        screenshots.append((screen_data, timecode))
+      # Are GIF frames recorded and has the Flipper's display changed??
+      if gif_frames is not None and screen_data_changed:
+
+        # Is there at least one stored GIF frame?
+        if gif_frames:
+
+          # The difference between this timecode and the previous GIF frame's
+          # timecodeone is the previous GIF frame's duration
+          prev_frame_duration_ms = (timecode - last_gif_frame_timecode) * 1000
+
+          # Repeat the previous GIF frame as many times as needed (with an
+          # invisible change to one pixel to force PIL to add the frame) so
+          # that no individual frame exceeds the maximum duration but the image
+          # is displayed for the correct amount of time
+          while prev_frame_duration_ms > max_gif_frame_duration_ms + \
+						min_gif_frame_duration_ms:
+            image = copy(gif_frames[-1])
+            image.putpixel((0, 0), [2, 3, 0, 1][image.getpixel((0, 0))])
+            gif_frame_durations_ms.append(max_gif_frame_duration_ms)
+            gif_frames.append(image)
+            prev_frame_duration_ms -= max_gif_frame_duration_ms
+
+          # Set the duration of the last GIF frame
+          gif_frame_durations_ms.append(max(prev_frame_duration_ms,
+						min_gif_frame_duration_ms))
+
+        # Convert the Flipper's screen data into an image and scale it up x4
+        image_data = bytes([(screen_data[i] >> j) & 1 \
+				for k in range(0, 1024, 128) \
+				for j in range(8) \
+				for i in range(k, k + 128)])
+        image = Image.frombytes(mode = "P", size = (128, 64),
+				data = image_data).\
+				resize((512, 256), resample = Image.BOX)
+        image.putpalette(gif_palette)
+
+        # Add the image to the GIF frames
+        gif_frames.append(image)
+        last_gif_frame_timecode = timecode
 
       # Hide the cursor if needed
       if cursor_visible:
@@ -636,13 +694,19 @@ def main():
 				for i in range(k, k + 128)])
 			for k in range(0, 1024, 128) for j in (0, 2, 4, 6)]
 
-      # Do we record the session in a text file?
-      if rt is not None:
+      # Encode the invisible timecode and button presses marker into the left
+      # spacer for the Flipper Zero's name
+      tcbtns = invisible_tc_btn_marker_fmt.format(timecode, flipper_inputs)
+      flipper_name_spc1 = set_text_invisible + tcbtns + attributes_reset + \
+				" " * (len_flipper_name_spc1 - len(tcbtns))
+
+      # Do we record the session in a text file and do we have a reason to
+      # record this frame?
+      if rt is not None and (screen_data_changed or flipper_inputs):
 
         # Generate the ASCII art for the record without help overlay or bottom
         # help line
-        aa = flipper_name_spc1.format(timecode) + flipper_name + \
-		flipper_name_spc2 + CR + LF + \
+        aa = flipper_name_spc1 + flipper_name + flipper_name_spc2 + CR + LF + \
 		"".join([set_bg_color.format(ansi_8bit_black) + \
 				set_fg_color.format(ansi_8bit_orange) + \
 				l + attributes_reset + CR + LF \
@@ -653,10 +717,13 @@ def main():
         rt.write(aa)
         nb_lines_back_up_text_record = height + 1
 
-      # If the keymap help should be displayed, overlay it over the lines
-      if show_keymap:
-        for i, l in enumerate(keymap_help):
-          imglines[keymap_help_overlay_at_line + i] = \
+      # Should we update the display?
+      if screen_data_changed or update_display or flipper_inputs:
+
+        # If the keymap help should be displayed, overlay it over the lines
+        if show_keymap:
+          for i, l in enumerate(keymap_help):
+            imglines[keymap_help_overlay_at_line + i] = \
 			imglines[keymap_help_overlay_at_line + i]\
 				[:keymap_help_overlay_at_col] + \
 			attributes_reset + \
@@ -666,9 +733,8 @@ def main():
 				[keymap_help_overlay_at_col + \
 					keymap_help_line_len:]
 
-      # Generate the displayed ASCII art with help overlay and bottom help line
-      aa = flipper_name_spc1.format(timecode) + flipper_name + \
-		flipper_name_spc2 + CR + LF + \
+        # Generate the display ASCII art with help overlay and bottom help line
+        aa = flipper_name_spc1 + flipper_name + flipper_name_spc2 + CR + LF + \
 		"".join([set_bg_color.format(ansi_8bit_black) + \
 				set_fg_color.format(ansi_8bit_orange) + \
 				l + attributes_reset + CR + LF \
@@ -676,10 +742,10 @@ def main():
 		bottom_line_spc1 + bottom_line + bottom_line_spc2 + \
 		x_lines_up.format(1) + CR + LF + x_lines_up.format(height + 1)
 
-      # Print the ASCII art and flush the console so it's updated immediately
-      sys.stdout.write(aa)
-      sys.stdout.flush()
-      nb_lines_back_up = height + 1
+        # Print the ASCII art and flush the console so it's updated immediately
+        sys.stdout.write(aa)
+        sys.stdout.flush()
+        nb_lines_back_up = height + 1
 
   except KeyboardInterrupt:
     pass
@@ -695,19 +761,42 @@ def main():
       start_time = now
     timecode = now - start_time
 
-    # If screenshots are recorded, add this timecode with no screen data
-    if screenshots is not None:
-      screenshots.append((None, timecode))
+    # If GIF frames are recorded and we have at least one frame, set this last
+    # timecode as the final GIF frame's duration
+    if gif_frames:
 
-    # Output the last hidden timecode then skip past the rendering
+      # The difference between this timecode and the previous GIF frame's
+      # timecodeone is the previous GIF frame's duration
+      prev_frame_duration_ms = (timecode - last_gif_frame_timecode) * 1000
+
+      # Repeat the previous GIF frame as many times as needed (with an
+      # invisible change to one pixel to force PIL to add the frame) so
+      # that no individual frame exceeds the maximum duration but the image
+      # is displayed for the correct amount of time
+      while prev_frame_duration_ms > max_gif_frame_duration_ms + \
+					min_gif_frame_duration_ms:
+        image = copy(gif_frames[-1])
+        image.putpixel((0, 0), [2, 3, 0, 1][image.getpixel((0, 0))])
+        gif_frame_durations_ms.append(max_gif_frame_duration_ms)
+        gif_frames.append(image)
+        prev_frame_duration_ms -= max_gif_frame_duration_ms
+
+      # Set the duration of the final GIF frame
+      gif_frame_durations_ms.append(max(prev_frame_duration_ms,
+						min_gif_frame_duration_ms))
+
+    # Output the last invisible timecode and button presses marker then
+    # skip past the rendering
     sys.stdout.write(CR + set_text_invisible + \
-			"Runtime: {:0.3f}s".format(timecode) + \
+			invisible_tc_btn_marker_fmt.
+				format(timecode,flipper_inputs) + \
 			attributes_reset + CR + LF * (nb_lines_back_up + 1))
 
     # If we record the session into a text file, output the same thing into it
     if rt is not None:
       rt.write(CR + set_text_invisible + \
-		"Runtime: {:0.3f}s".format(timecode) + \
+		invisible_tc_btn_marker_fmt.
+			format(timecode,flipper_inputs) + \
 		attributes_reset + CR + LF * (nb_lines_back_up_text_record + 1))
 
     # Show the cursor again if needed
@@ -720,46 +809,37 @@ def main():
     # Join the thread
     t.join()
 
-  # If screenshots were recorded, save them as an animated GIF
-  if screenshots is not None:
+  # If GIF frames are recorded and we have at least one frame, save them as an
+  # animated GIF
+  if gif_frames:
 
-    # 2-color palette: color #0 = orange, color #1 = black
-    palette = rgb_orange + rgb_black
+    # Add a copy of the first and last frames with one pixel invisibly modified
+    # (to force PIL to add the frames) with a very small duration to the start
+    # and the end of the animation respectively, because some video players
+    # don't play edge frames with the correct duration - i.e. mplayer
 
-    # Convert the screenshots to images and create a list of GIF frame durations
-    # Scale up the images x4
-    images = []
-    durations_ms = []
+    # Duplicate of the first frame
+    gif_frame_durations_ms[0] = max(gif_frame_durations_ms[0] - \
+					min_gif_frame_duration_ms,
+					min_gif_frame_duration_ms)
+    image = copy(gif_frames[0])
+    image.putpixel((0, 0), [2, 3, 0, 1][image.getpixel((0, 0))])
+    gif_frames.insert(0, image)
+    gif_frame_durations_ms.insert(0, min_gif_frame_duration_ms)
 
-    for n, (screen_data, timecode) in enumerate(screenshots):
-      if screen_data is not None:
+    # Duplicate of the last frame
+    gif_frame_durations_ms[-1] = max(gif_frame_durations_ms[-1] - \
+					min_gif_frame_duration_ms,
+					min_gif_frame_duration_ms)
+    image = copy(gif_frames[-1])
+    image.putpixel((0, 0), [2, 3, 0, 1][image.getpixel((0, 0))])
+    gif_frames.append(image)
+    gif_frame_durations_ms.append(min_gif_frame_duration_ms)
 
-        # Convert the Flipper screen data into an image and scale it up
-        image_data = bytes([(screen_data[i] >> j) & 1 \
-				for k in range(0, 1024, 128) \
-				for j in range(8) \
-				for i in range(k, k + 128)])
-        image = Image.frombytes(mode = "P", size = (128, 64),
-				data = image_data).\
-				resize((512, 256), resample = Image.BOX)
-        image.putpalette(palette)
-        duration_ms = (screenshots[n + 1][1] - timecode) * 1000
-
-        # Append the image as many times as needed so that the duration doesn't
-        # exceed 655350 ms (i.e. 65535 hundredth of a second encoded on an
-        # unsigned short in the GIF format) per image
-        while duration_ms > 655350:
-          images.append(image)
-          durations_ms.append(655350)
-          duration_ms -= 655350
-
-        if duration_ms > 0:
-          images.append(image)
-          durations_ms.append(duration_ms)
-
-    # Save the images as an animated GIF
-    images[0].save(args.gif, save_all = True, append_images = images[1:],
-			optimize = True, duration = durations_ms, loop = 0)
+    # Encode and save the animated GIF file
+    gif_frames[0].save(args.gif, save_all = True,
+			append_images = gif_frames[1:], optimize = False,
+			duration = gif_frame_durations_ms, loop = 0)
 
   return 0
 
