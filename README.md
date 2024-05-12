@@ -14,7 +14,7 @@ Text-mode [Flipper Zero](https://flipperzero.one/) remote-control.
 - Record and replay a screen session
 - Record and replay button presses
 
-https://github.com/Giraut/tFlipper/assets/37288252/9e1c3753-835e-4ead-a4c8-cdbc5b4fc527
+https://github.com/Giraut/tFlipper/assets/37288252/dff3fa2c-835d-40c3-ad4f-d5bc8a89916e
 
 
 
