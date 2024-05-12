@@ -649,7 +649,7 @@ def main():
         _, btns = replay_buttons_at.pop(0)
         flipper_inputs += btns
 
-        # Send the event to the Flipper Zero
+        # Send the button press events to the Flipper Zero
         for b in btns:
           p.rpc_gui_send_input(("SHORT " if b.islower() else "LONG ") + \
 				{"L": "LEFT", "D": "DOWN",
