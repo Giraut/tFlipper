@@ -4,7 +4,7 @@ Version: 1.3.0
 
 Record player
 
-Replay sessions recorded with tFlipper -r
+Replay sessions recorded with tflipper -r
 """
 
 ## Modules
@@ -62,7 +62,7 @@ def main():
 
   argparser.add_argument(
 	  "record",
-	  help = "tFlipper session record file to play",
+	  help = "tflipper session record file to play",
 	  type = str
 	)
 

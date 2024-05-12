@@ -485,7 +485,7 @@ def main():
   argparser.add_argument(
 	  "-t", "--txt",
 	  help = "Text file to record the session into "
-			"(play it back with tFreplay)",
+			"(play it back with tfreplay)",
 	  type = str
 	)
 
@@ -552,6 +552,7 @@ def main():
   cursor_visible = True
   show_keymap = False
   start_time = None
+
   screen_data = b""
 
   try:
