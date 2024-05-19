@@ -38,13 +38,13 @@ Hit `Ctrl-K` to see the keyboard-to-buttons mapping. To remain compatible with m
 
 - Run `python tflipper.py -t session.txt` to record the session as ANSI text in `session.txt`, including timing markers and button press events:
   - The screen session can be replayed with the correct timing with `python tfreplay.py session.txt`
-  - The button presses can be replayed on the Flipper zero with `python tflipper.py -r session.txt`
+  - The button presses can be replayed on the Flipper zero with `python tflipper.py -rt session.txt`
 
-- Run `python tflipper.py -g session.gif` to record the session as an animated GIF:
+- Run `python tflipper.py -g session.gif` to record the session as an animated GIF in `session.gif`, including timing markers and button press events:
+  - The animated GIF can be replayed using most image viewers, video players and web browsers
+  - The button presses can be replayed on the Flipper zero with `python tflipper.py -rg session.gif`
 
 ![Flipper Zero session recorded as an animated GIF](screenshots/session_animation.gif)
-
-The animated GIF can be replayed using most image viewers, video players and web browsers, but it does not contain any replayable button press events.
 
 
 ## Installation
