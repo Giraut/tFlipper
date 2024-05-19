@@ -44,8 +44,25 @@ Hit `Ctrl-K` to see the keyboard-to-buttons mapping. To remain compatible with m
   - The animated GIF can be replayed using most image viewers, video players and web browsers
   - The button presses can be replayed on the Flipper zero with `python tflipper.py -rg session.gif`
 
-![Flipper Zero session recorded as an animated GIF](screenshots/session_animation.gif)
+      ![Flipper Zero session recorded as an animated GIF](screenshots/session_animation.gif)
 
+- Run `python tflipper.py -n` to suppress the normal display output and only print button press events (also works when replaying them from a text or GIF file):
+
+    ```
+    $ python tflipper.py -n
+    [3.943s] ↰
+    [3.943s] ↰
+    [3.943s] ↰
+    [7.099s] o
+    [10.404s] →
+    [11.730s] ↓
+    [12.675s] ↓
+    [13.231s] ↓
+    [16.166s] ↰
+    [20.519s] o (long press)
+    [22.855s] o (long press)
+    [26.734s] ← (long press)
+    ```
 
 ## Installation
 

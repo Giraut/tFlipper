@@ -422,7 +422,7 @@ invisible_tc_btn_marker_fmt = "[{:0.3f}s] [{}]"
 # a non-empty list of button presses
 re_tc_btn_marker = re.compile((set_text_invisible.replace("[", "\\[") + \
 				"\[([0-9]+\.[0-9]{3})s\] " \
-				"\[([lLdDuUrRoObB]+)\]" + \
+				"\[([lLdDuUrRoObB]*)\]" + \
 				attributes_reset.replace("[", "\\[")))
 
 
@@ -581,6 +581,12 @@ def main():
 	  type = str
 	)
 
+  argparser.add_argument(
+	  "-n", "--no-display",
+	  help = "Suppress the display output, only print button presses",
+	  action = "store_true"
+	)
+
   args = argparser.parse_args()
 
   # Semigraphic-ize the keymap help strings
@@ -626,9 +632,15 @@ def main():
         replay_buttons_at.extend([(float(t), b) \
 				for t, b in re_tc_btn_marker.findall(s)])
 
-  # No text file or GIF file to replay button pressed from
+  # No text file or GIF file to replay button presses from
   else:
     replay_buttons_at = None
+
+  # If we replay button presses, prune empty button presses apart from the last
+  # one that marks the end of the replay
+  if replay_buttons_at is not None:
+    replay_buttons_at = [e for e in replay_buttons_at[:-1] if e[1]] + \
+			replay_buttons_at[-1:]
 
   # Connect to the Flipper Zero
   p = FlipperProto(serial_port = args.device)
@@ -641,16 +653,21 @@ def main():
   flipper_name_spc2 = " " * (width - len_flipper_name_spc1 - len(flipper_name))
 
   # Bottom help line
-  bottom_line = "[ Ctrl-K to show/hide keymap ]     [ Ctrl-C to stop ]"
+  bottom_line = ("[ Ctrl-K to show/hide keymap ]     " \
+				if replay_buttons_at is None else "") + \
+			"[ Ctrl-C to stop ]"
 
   # Left and right spacers for the bottom help line
   bottom_line_spc1 = " " * int((width - len(bottom_line)) / 2)
   bottom_line_spc2 = " " * (width - len(bottom_line_spc1) - len(bottom_line))
 
-  # Spawn the thread to get keypresses
+  # Create a queue for the input thread to send messages to the main thread
   q = multiprocessing.Queue()
-  t = threading.Thread(target = input_thread, args = (q,))
-  t.start()
+
+  # Spawn the input thread to get keypresses if we don't replay button presses
+  if replay_buttons_at is None:
+    t = threading.Thread(target = input_thread, args = (q,))
+    t.start()
 
   # Open the text file if the session is recorded in a text file
   rt = open(args.txt, "w", encoding = "utf-8") if args.txt else None
@@ -721,19 +738,26 @@ def main():
       if timecode < 0:
         timecode = 0
 
-      # If we're due to replay Flipper Zero button presses, add them to the
-      # inputs and replay them
-      while replay_buttons_at and timecode >= replay_buttons_at[0][0]:
+      # Do we replay button presses?
+      if replay_buttons_at is not None:
 
-        _, btns = replay_buttons_at.pop(0)
-        flipper_inputs += btns
+        # If there are no buttons left to replay, stop as if the user hit Ctrl-C
+        if not replay_buttons_at:
+          raise KeyboardInterrupt
 
-        # Send the button press events to the Flipper Zero
-        for b in btns:
-          p.rpc_gui_send_input(("SHORT " if b.islower() else "LONG ") + \
-				{"L": "LEFT", "D": "DOWN",
-					"U": "UP", "R": "RIGHT",
-					"O": "OK", "B": "BACK"}[b.upper()])
+        # If we're due to replay Flipper Zero button presses, add them to the
+        # inputs and replay them
+        while replay_buttons_at and timecode >= replay_buttons_at[0][0]:
+
+          _, btns = replay_buttons_at.pop(0)
+          flipper_inputs += btns
+
+          # Send the button press events to the Flipper Zero
+          for b in btns:
+            p.rpc_gui_send_input(("SHORT " if b.islower() else "LONG ") + \
+					{"L": "LEFT", "D": "DOWN", "U": "UP",
+						"R": "RIGHT", "O": "OK",
+						"B": "BACK"}[b.upper()])
 
       # Get a screenshot from the Flipper Zero
       prev_screen_data = screen_data
@@ -796,7 +820,7 @@ def main():
         last_gif_frame_timecode = timecode
 
       # Hide the cursor if needed
-      if cursor_visible:
+      if not args.no_display and cursor_visible:
         sys.stdout.write(set_cursor_invisible)
         cursor_visible = False
 
@@ -847,21 +871,37 @@ def main():
       # Should we update the display?
       if screen_data_changed or update_display or flipper_inputs:
 
-        # If the keymap help should be displayed, overlay it over the lines
-        if show_keymap:
-          for i, l in enumerate(keymap_help):
-            imglines[keymap_help_overlay_at_line + i] = \
-			imglines[keymap_help_overlay_at_line + i]\
-				[:keymap_help_overlay_at_col] + \
-			attributes_reset + \
-			l + \
-			set_fg_color.format(ansi_8bit_orange) + \
-			imglines[keymap_help_overlay_at_line + i]\
-				[keymap_help_overlay_at_col + \
-					keymap_help_line_len:]
+        # Is the normal display output suppressed?
+        if args.no_display:
 
-        # Generate the display ANSI text with help overlay and bottom help line
-        at = flipper_name_spc1 + flipper_name + flipper_name_spc2 + CR + LF + \
+          # Print the timecode and keypresses
+          for b in flipper_inputs:
+            print("[{:0.3f}s] {}{}".
+			format(timecode,
+				{"L": "\u2190", "D": "\u2193",
+					"U": "\u2191", "R": "\u2192",
+					 "O": "o", "B": "\u21B0"}[b.upper()],
+				"" if b.islower() else " (long press)"))
+
+        # Output the normal display
+        else:
+
+          # If the keymap help should be displayed, overlay it over the lines
+          if show_keymap:
+            for i, l in enumerate(keymap_help):
+              imglines[keymap_help_overlay_at_line + i] = \
+				imglines[keymap_help_overlay_at_line + i]\
+					[:keymap_help_overlay_at_col] + \
+				attributes_reset + \
+				l + \
+				set_fg_color.format(ansi_8bit_orange) + \
+				imglines[keymap_help_overlay_at_line + i]\
+					[keymap_help_overlay_at_col + \
+						keymap_help_line_len:]
+
+          # Generate the display ANSI text with help overlay & bottom help line
+          at = flipper_name_spc1 + flipper_name + flipper_name_spc2 + \
+		CR + LF + \
 		"".join([set_bg_color.format(ansi_8bit_black) + \
 				set_fg_color.format(ansi_8bit_orange) + \
 				l + attributes_reset + CR + LF \
@@ -869,12 +909,12 @@ def main():
 		bottom_line_spc1 + bottom_line + bottom_line_spc2 + \
 		x_lines_up.format(1) + CR + LF + x_lines_up.format(height + 1)
 
-        # Print the ANSI text and flush the console so it's updated immediately
-        sys.stdout.write(at)
-        sys.stdout.flush()
-        nb_lines_back_up = height + 1
+          # Print the ANSI text & flush the console so it's updated immediately
+          sys.stdout.write(at)
+          sys.stdout.flush()
+          nb_lines_back_up = height + 1
 
-        update_display = False
+          update_display = False
 
   except KeyboardInterrupt:
     pass
@@ -913,9 +953,10 @@ def main():
       gif_frame_durations_ms.append(max(prev_frame_duration_ms,
 						min_gif_frame_duration_ms))
 
-    # Output the last invisible timecode and button presses marker then skip
-    # past the rendering
-    sys.stdout.write(CR + set_text_invisible + \
+    # If we output the normal display, output the last invisible timecode and
+    # button presses marker then skip past the rendering
+    if not args.no_display:
+      sys.stdout.write(CR + set_text_invisible + \
 			invisible_tc_btn_marker_fmt.
 				format(timecode, flipper_inputs) + \
 			attributes_reset + CR + LF * (nb_lines_back_up + 1))
@@ -931,11 +972,11 @@ def main():
     if not cursor_visible:
       sys.stdout.write(set_cursor_visible)
 
-    # Tell the input thread to stop if it hasn't stopped by itself already
-    setattr(t, "do_run", False)
-
-    # Join the thread
-    t.join()
+    # If we're not replaying button presses, tell the input thread to stop if
+    # it hasn't stopped by itself already and join the thread
+    if replay_buttons_at is None:
+      setattr(t, "do_run", False)
+      t.join()
 
   # If GIF frames were recorded and we have at least one frame, save them as an
   # animated GIF

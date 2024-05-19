@@ -1,3 +1,7 @@
+- Disable the keyboard input when replaying button presses
+- Exit automatically after finishing replaying button presses
+- Added -n option to suppress the normal display output and only print button presses
+
 ## Version 1.5.0 - 19/05/2024
 
 - Added the ability to record and replay button press events in a GIF file
