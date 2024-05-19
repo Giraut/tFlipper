@@ -1,3 +1,5 @@
+## Version 1.6.0 - 19/05/2024
+
 - Disable the keyboard input when replaying button presses
 - Exit automatically after finishing replaying button presses
 - Added -n option to suppress the normal display output and only print button presses
