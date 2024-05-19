@@ -1,3 +1,7 @@
+## Version 1.5.0 - 19/05/2024
+
+- Added the ability to record and replay button press events in a GIF file
+
 ## Version 1.4.0 - 12/05/2024
 
 - Added the ability to record and replay button press events
