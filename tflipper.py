@@ -523,6 +523,7 @@ def steg_decode(image, palette):
   return s
 
 
+
 ## Main routine
 #
 
