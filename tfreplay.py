@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """Flipper Zero remote control for the terminal
 Version: 1.6.0
 
@@ -70,8 +70,8 @@ def main():
 
   # Precompiled regex for an invisible timecode and button presses marker
   re_tc_btn_marker = re.compile((set_text_invisible.replace("[", "\\[") + \
-					"\[([0-9]+\.[0-9]{3})s\] " \
-					"\[[lLdDuUrRoObB]*\]" + \
+					r"\[([0-9]+\.[0-9]{3})s\] " \
+					r"\[[lLdDuUrRoObB]*\]" + \
 					attributes_reset.replace("[", "\\[")).\
 					encode("ascii"))
 
