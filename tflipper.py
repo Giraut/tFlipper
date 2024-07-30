@@ -407,7 +407,7 @@ ansi_8bit_orange = 208
 rgb_orange1 = [0xfe, 0x8a, 0x2c]
 rgb_orange2 = [0xfe, 0x8a, 0x2d]
 
-# 4-color palette for the GIF file: color 0 & 1 = orange, color 2 & 3 = black
+# 4-color palette for the GIF file: color 0 & 2 = orange, color 1 & 3 = black
 gif_palette = rgb_orange1 + rgb_black1 + rgb_orange2 + rgb_black2
 
 # Minimum and maximum duration of one GIF frame
