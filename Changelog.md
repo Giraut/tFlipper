@@ -1,3 +1,6 @@
+## Version 1.6.1 - 30/07/2024
+- Corrected blackslash sequences in string literals so they don't generate a syntax warning in Python 3.12 and above
+
 ## Version 1.6.0 - 19/05/2024
 
 - Disable the keyboard input when replaying button presses
