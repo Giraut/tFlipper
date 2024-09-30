@@ -1,5 +1,5 @@
 # Flipper Zero console remote control
-### Version 1.6.1
+### Version 1.7.0
 
 * [Usage](#Usage)
 * [Installation](#Installation)
@@ -14,7 +14,7 @@ Text-mode [Flipper Zero](https://flipperzero.one/) remote-control.
 - Record and replay a screen session
 - Record and replay button presses
 
-https://github.com/Giraut/tFlipper/assets/37288252/dff3fa2c-835d-40c3-ad4f-d5bc8a89916e
+https://github.com/user-attachments/assets/f0055626-1378-41a5-9fc5-4d742a62a2ca
 
 
 
@@ -32,7 +32,11 @@ Hit `Ctrl-K` to see the keyboard-to-buttons mapping. To remain compatible with m
 
 ![Flipper Zero display in the console](screenshots/keyboard_mapping_help.png)
 
-- Run `python tflipper.py -H` to render the display using high-density semigraphics: the entire display will then fit in a 80 x 24 console, at the cost of a slightly distorted image, because the aspect ratio cannot be respected:
+- Run `python tflipper.py -M` to render the display using mid-density semigraphics: the entire display will then fit in a 80 x 24 console, at the cost of a slightly distorted image, because the aspect ratio cannot be respected:
+
+![Flipper Zero display in the console](screenshots/mid_density_semigraphics_rendering.png)
+
+- Run `python tflipper.py -H` to render the display using high-density 8-dot Braille characters: the entire display will be even smaller and the aspect ratio will be respected, but the image is rendered as disconnected dots rather than full-size pixels, and depending on your terminal, it may show black horizontal lines. This may or may not be improved by the `-B` switch, which causes the characters to be dislayed in bold:
 
 ![Flipper Zero display in the console](screenshots/high_density_semigraphics_rendering.png)
 

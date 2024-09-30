@@ -1,3 +1,8 @@
+## Version 1.7.0 - 01/10/2024
+
+- Added high-density semigraphic rendering with 8-dot Braille characters
+- Added switch to display the semigraphic characters in bold
+
 ## Version 1.6.1 - 30/07/2024
 - Corrected blackslash sequences in string literals so they don't generate a syntax warning in Python 3.12 and above
 
