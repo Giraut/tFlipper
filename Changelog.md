@@ -1,3 +1,9 @@
+## Version 1.7.0 - 01/10/2024
+
+- Added high-density semigraphic rendering with 8-dot Braille characters
+- Added switch to display the semigraphic characters in bold
+- Fixed invalid escape sequences
+
 ## Version 1.6.0 - 19/05/2024
 
 - Disable the keyboard input when replaying button presses
