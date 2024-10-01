@@ -1,3 +1,6 @@
+## Version 1.7.1 - 02/10/2024
+- Made the semigraphic character tables more compact and more readable
+
 ## Version 1.7.0 - 01/10/2024
 
 - Added high-density semigraphic rendering with 8-dot Braille characters

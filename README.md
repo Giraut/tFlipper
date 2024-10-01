@@ -1,5 +1,5 @@
 # Flipper Zero console remote control
-### Version 1.7.0
+### Version 1.7.1
 
 * [Usage](#Usage)
 * [Installation](#Installation)
